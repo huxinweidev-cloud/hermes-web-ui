@@ -6,8 +6,9 @@ services:
     image: ${WEBUI_IMAGE:-hermes-web-ui-local:latest}
     container_name: ${WEBUI_CONTAINER_NAME:-hermes-webui}
     ports:
-      - "${PORT:-6060}:${PORT:-6060}"
-      - "${XAI_OAUTH_PORT:-56121}:56121"
+      # Keep app/OAuth ports private to the host; public access must go through Nginx/Cloudflare.
+      - "127.0.0.1:${PORT:-6060}:${PORT:-6060}"
+      - "127.0.0.1:${XAI_OAUTH_PORT:-56121}:56121"
     volumes:
       - ${HERMES_DATA_DIR:-./hermes_data}:/home/agent/.hermes
       - ${HERMES_DATA_DIR:-./hermes_data}/hermes-web-ui:/home/agent/.hermes-web-ui
@@ -19,7 +20,16 @@ services:
       - HERMES_WEB_UI_XAI_CALLBACK_BIND_HOST=0.0.0.0
       - PATH=/opt/hermes/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       - AUTH_DISABLED=${AUTH_DISABLED:-false}
+      - AUTH_TOKEN=${AUTH_TOKEN:-}
       - HERMES_ALLOW_ROOT_GATEWAY=1
+    networks:
+      - default
+      - sub2api-proxy
     restart: unless-stopped
     stdin_open: true
     tty: true
+
+networks:
+  sub2api-proxy:
+    external: true
+    name: sub2api_sub2api-network
